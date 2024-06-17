@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:greenbank/pages/RegisterPage.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -37,7 +38,7 @@ class _LoginPageState extends State<LoginPage> {
     if (response.statusCode == 200) {
       var responseData = json.decode(response.body);
 
-      // Salve o token usando SharedPreferences
+
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', responseData['token']);
 
@@ -46,7 +47,7 @@ class _LoginPageState extends State<LoginPage> {
         MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Logado')),
       );
     } else {
-      // Mostre o diálogo de erro com o corpo da resposta HTTP
+
       showDialog(
         context: context,
         builder: (context) {
@@ -96,6 +97,19 @@ class _LoginPageState extends State<LoginPage> {
                     textStyle: const TextStyle(color: Colors.black)
                 ),
                 child: const Text('Login'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => RegisterPage()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.greenAccent,
+                    textStyle: const TextStyle(color: Colors.black)
+                ),
+                child: const Text('Registrar'),
               )
             ],
           ),
