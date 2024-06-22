@@ -21,6 +21,10 @@ class _MyHomePageState extends State<MyHomePage> {
   double _numeroConta = 0.0;
   double _saldoAtual = 0.0;
   List<dynamic> _ultimasTransacoes = [];
+  final _numeroContaController = TextEditingController();
+  final _valorDepositoController = TextEditingController();
+  final _numeroContaDestinoController = TextEditingController();
+  final _valorTransferenciaController = TextEditingController();
 
   @override
   void initState() {
@@ -144,7 +148,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
       var response = await request.send();
 
-      if (response.statusCode == 201) { // Note: changed to 201 (Created) instead of 200 (OK)
+      if (response.statusCode == 200) {
         await showDialog(
           context: context,
           builder: (BuildContext context) {
@@ -201,6 +205,243 @@ class _MyHomePageState extends State<MyHomePage> {
             ],
           );
         },
+      );
+    }
+  }
+
+  Future<void> _showDepositoModal() async {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Depósito'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                decoration: InputDecoration(
+                  labelText: 'Número da conta',
+                ),
+                controller: _numeroContaController,
+              ),
+              TextField(
+                decoration: InputDecoration(
+                  labelText: 'Valor do depósito',
+                ),
+                controller: _valorDepositoController,
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              child: Text('Cancelar'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            ElevatedButton(
+              child: Text('Depositar'),
+              onPressed: () async {
+                // Chamar API para fazer depósito
+                await _depositar();
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showTransferenciaModal() async {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Transferência'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                decoration: InputDecoration(
+                  labelText: 'Número da conta de destino',
+                ),
+                controller: _numeroContaDestinoController,
+              ),
+              TextField(
+                decoration: InputDecoration(
+                  labelText: 'Valor da transferência',
+                ),
+                controller: _valorTransferenciaController,
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              child: Text('Cancelar'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            ElevatedButton(
+              child: Text('Transferir'),
+              onPressed: () async {
+                // Chamar API para fazer transferência
+                await _transferir();
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _depositar() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String email = prefs.getString('email')?? '';
+    String token = prefs.getString('token')?? '';
+
+    var url = Uri.parse('http://192.168.1.14:8080/transacao/deposito');
+    var headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+    var body = json.encode({
+      "numeroConta": _numeroContaController.text,
+      "valorDeposito": double.parse(_valorDepositoController.text),
+      "tipoTransacao": "Deposito",
+    });
+
+    try {
+      var response = await http.post(url, headers: headers, body: body);
+
+      if (response.statusCode == 200) {
+
+        await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text("Depósito realizado com sucesso!"),
+            content: Text("Seu depósito foi realizado com sucesso."),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text("OK"),
+              ),
+            ],
+          ),
+        );
+      } else {
+        // Erro ao realizar depósito
+        await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text("Erro ao realizar depósito"),
+            content: Text("Erro: ${response.statusCode} - ${response.reasonPhrase}"),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text("OK"),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+
+      await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text("Erro ao fazer requisição"),
+          content: Text("Erro: $e"),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text("OK"),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Future<void> _transferir() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String email = prefs.getString('email')?? '';
+    String token = prefs.getString('token')?? '';
+
+    var url = Uri.parse('http://192.168.1.14:8080/transacao');
+    var headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+    var body = json.encode({
+      "emailContaBancaria": email,
+      "numeroConta": _numeroContaDestinoController.text,
+      "valorTransacao": double.parse(_valorTransferenciaController.text),
+      "tipoTransacao": "transferencia",
+    });
+
+    try {
+      var response = await http.post(url, headers: headers, body: body);
+
+      if (response.statusCode == 200) {
+
+        await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text("Transferência realizada com sucesso!"),
+            content: Text("Sua transferência foi realizada com sucesso."),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text("OK"),
+              ),
+            ],
+          ),
+        );
+      } else {
+
+        await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text("Erro ao realizar transferência"),
+            content: Text("Erro: ${response.statusCode} - ${response.reasonPhrase}"),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text("OK"),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+
+      await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text("Erro ao fazer requisição"),
+          content: Text("Erro: $e"),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text("OK"),
+            ),
+          ],
+        ),
       );
     }
   }
@@ -279,6 +520,20 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text("Tela de transações"),
+            SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () async {
+                await _showDepositoModal();
+              },
+              child: Text("Depósito"),
+            ),
+            SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () async {
+                await _showTransferenciaModal();
+              },
+              child: Text("Transferência"),
+            ),
           ],
         ),
       ),
